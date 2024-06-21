@@ -1,0 +1,57 @@
+{
+  "name": "gopeed-extention-quarkuc",
+  "author": "foxxorcat",
+  "title": "夸克和UC网盘分享下载",
+  "description": "支持夸克和UC网盘分享下载(自动删除转存)",
+  "icon": "icon.png",
+  "version": "1.0.0",
+  "homepage": "https://github.com/foxxorcat/gopeed-extention",
+  "repository": {
+    "url": "https://github.com/foxxorcat/gopeed-extention",
+    "directory": "gopeed-extention-quarkuc"
+  },
+  "scripts": [
+    {
+      "event": "onResolve",
+      "match": {
+        "urls": [
+          "*://pan.quark.cn/s/*",
+          "*://drive.uc.cn/s/*"
+        ]
+      },
+      "entry": "dist/index.js"
+    },
+    {
+      "event": "onStart",
+      "match": {
+        "labels": [
+          "foxxorcat@gopeed-extention-quarkuc"
+        ]
+      },
+      "entry": "dist/index.js"
+    },
+    {
+      "event": "onError",
+      "match": {
+        "labels": [
+          "foxxorcat@gopeed-extention-quarkuc"
+        ]
+      },
+      "entry": "dist/index.js"
+    }
+  ],
+  "settings": [
+    {
+      "name": "quark_cookie",
+      "title": "QuarkCookie",
+      "description": "夸克网盘网站Cookie,必须包含__puus",
+      "type": "string"
+    },
+    {
+      "name": "uc_cookie",
+      "title": "UCCookie",
+      "description": "UC网盘网站Cookie,必须包含__puus",
+      "type": "string"
+    }
+  ]
+}
