@@ -1,0 +1,12 @@
+{
+  "name": "gopeed-extention-monorepo",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build"
+  },
+  "keywords": [],
+  "license": "MIT",
+  "devDependencies": {}
+}
