@@ -1,4 +1,5 @@
 {
+  "$schema": "../schema.json",
   "name": "gopeed-extention-quarkuc",
   "author": "foxxorcat",
   "title": "夸克和UC网盘分享下载",

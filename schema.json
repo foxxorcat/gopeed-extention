@@ -1,0 +1,163 @@
+{
+  "$id": "http://gopeed.com/draft/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "扩展名称, Gopeed 中会使用<author>@<name>作为扩展的 ID"
+    },
+    "author": {
+      "type": "string",
+      "description": "作者名称, Gopeed 中会使用<author>@<name>作为扩展的 ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "扩展的标题"
+    },
+    "description": {
+      "type": "string",
+      "description": "扩展的描述"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "\\.png$",
+      "description": "扩展图标, 填写相对路径, 示例: icon.png"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+(\\.\\d+){2}",
+      "description": "扩展版本, 使用 semver 规范, 扩展更新时是基于此字段进行比较的, 所以请确保版本号是符合规范的"
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "description": "扩展主页"
+    },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "扩展所属 git 仓库地址, Gopeed 扩展依赖git来实现去中心化的扩展管理, 所以如果你的扩展需要被用户安装和更新, 那么就必须将扩展源码托管到远程 git 仓库中, 并配置此字段"
+        },
+        "directory": {
+          "type": "string",
+          "description": "如果一个 git 仓库中包含多个扩展项目的话, 可以通过directory属性指定子目录"
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "enum": [
+              "onResolve",
+              "onStart",
+              "onError"
+            ]
+          },
+          "match": {
+            "type": "object",
+            "properties": {
+              "urls": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "通过链接匹配，匹配规则和 chrome 扩展的匹配规则一致"
+              },
+              "labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "通过标签匹配(非正则)"
+              }
+            },
+            "description": "脚本执行规则匹配"
+          },
+          "entry": {
+            "type": "string",
+            "description": "脚本入口相对位置"
+          }
+        },
+        "required": [
+          "event",
+          "match",
+          "entry"
+        ]
+      }
+    },
+    "settings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "设置字段名"
+          },
+          "title": {
+            "type": "string",
+            "description": "设置标题"
+          },
+          "description": {
+            "type": "string",
+            "description": "设置描述"
+          },
+          "type": {
+            "type": "string",
+            "description": "设置值类型"
+          },
+          "value": {
+            "type": "string",
+            "description": "设置默认值"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "设置选项标题"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "设置选项值"
+                }
+              },
+              "required": [
+                "label",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description"
+        ]
+      }
+    }
+  },
+  "required": [
+    "name",
+    "author",
+    "title",
+    "description",
+    "icon",
+    "version",
+    "homepage",
+    "repository",
+    "scripts"
+  ]
+}

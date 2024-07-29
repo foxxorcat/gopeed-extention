@@ -1,4 +1,5 @@
 {
+  "$schema": "../schema.json",
   "name": "gopeed-extention-baidu",
   "author": "",
   "title": "gopeed extention demo title",
@@ -13,7 +14,8 @@
     {
       "event": "onResolve",
       "match": {
-        "urls": ["*://github.com/*"]
+        "urls": ["*://github.com/*"],
+        "labels": []
       },
       "entry": "dist/index.js"
     }
