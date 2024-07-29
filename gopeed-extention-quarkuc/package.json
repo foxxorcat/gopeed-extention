@@ -28,7 +28,7 @@
     "webpack-cli": "^5.0.1"
   },
   "dependencies": {
-    "@netdisk-sdk/quarkuc-sdk": "0.1.1",
+    "@netdisk-sdk/quarkuc-sdk": "workspace:^",
     "fastestsmallesttextencoderdecoder": "^1.0.22",
     "js-xxhash": "^4.0.0",
     "lodash.merge": "^4.6.2",

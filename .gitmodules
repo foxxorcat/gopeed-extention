@@ -1,0 +1,3 @@
+[submodule "netdisk-sdk-js"]
+	path = netdisk-sdk-js
+	url = https://github.com/foxxorcat/netdisk-sdk-js

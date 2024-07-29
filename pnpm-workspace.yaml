@@ -1,2 +1,3 @@
 packages:
   - gopeed-extention*
+  - netdisk-sdk-js/**/*
