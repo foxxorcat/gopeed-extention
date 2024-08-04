@@ -1,0 +1,33 @@
+diff --git a/lib/client.js b/lib/client.js
+index 9e586d520cd79acf07024e7832eba5dde51cb988..5a06a3a7d86509583c05107426d3f8ddfa9e56e1 100644
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -5,7 +5,9 @@
+  */
+ 
+ let root;
+-if (typeof window !== 'undefined') {
++if (typeof globalThis != 'undefined'){
++  root = globalThis
++}else if (typeof window !== 'undefined') {
+   // Browser window
+   root = window;
+ } else if (typeof self === 'undefined') {
+@@ -310,7 +312,7 @@ function Response(request_) {
+   // getAllResponseHeaders sometimes falsely returns "" for CORS requests, but
+   // getResponseHeader still works. so we get content-type even if getting
+   // other headers fails.
+-  this.header['content-type'] = this.xhr.getResponseHeader('content-type');
++  this.header['content-type'] = this.xhr.getResponseHeader('Content-Type');
+   this._setHeaderProperties(this.header);
+   if (this.text === null && request_._responseType) {
+     this.body = this.xhr.response;
+@@ -781,7 +783,7 @@ Request.prototype._end = function () {
+   xhr.send(typeof data === 'undefined' ? null : data);
+ };
+ request.agent = () => new Agent();
+-for (const method of ['GET', 'POST', 'OPTIONS', 'PATCH', 'PUT', 'DELETE']) {
++for (const method of ['HEAD','GET', 'POST', 'OPTIONS', 'PATCH', 'PUT', 'DELETE']) {
+   Agent.prototype[method.toLowerCase()] = function (url, fn) {
+     const request_ = new request.Request(method, url);
+     this._setDefaults(request_);

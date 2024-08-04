@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "license": "MIT",
-  "devDependencies": {}
+  "pnpm": {
+    "patchedDependencies": {
+      "superagent@9.0.2": "patches/superagent@9.0.2.patch"
+    }
+  }
 }

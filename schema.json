@@ -47,9 +47,7 @@
           "description": "如果一个 git 仓库中包含多个扩展项目的话, 可以通过directory属性指定子目录"
         }
       },
-      "required": [
-        "url"
-      ]
+      "required": ["url"]
     },
     "scripts": {
       "type": "array",
@@ -57,11 +55,7 @@
         "type": "object",
         "properties": {
           "event": {
-            "enum": [
-              "onResolve",
-              "onStart",
-              "onError"
-            ]
+            "enum": ["onResolve", "onStart", "onError"]
           },
           "match": {
             "type": "object",
@@ -88,11 +82,7 @@
             "description": "脚本入口相对位置"
           }
         },
-        "required": [
-          "event",
-          "match",
-          "entry"
-        ]
+        "required": ["event", "match", "entry"]
       }
     },
     "settings": {
@@ -113,7 +103,7 @@
             "description": "设置描述"
           },
           "type": {
-            "type": "string",
+            "enum": ["string", "number", "boolean"],
             "description": "设置值类型"
           },
           "value": {
@@ -134,18 +124,11 @@
                   "description": "设置选项值"
                 }
               },
-              "required": [
-                "label",
-                "value"
-              ]
+              "required": ["label", "value"]
             }
           }
         },
-        "required": [
-          "name",
-          "title",
-          "description"
-        ]
+        "required": ["name", "title", "description", "type"]
       }
     }
   },

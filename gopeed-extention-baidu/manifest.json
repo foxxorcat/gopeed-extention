@@ -1,24 +1,88 @@
 {
   "$schema": "../schema.json",
   "name": "gopeed-extention-baidu",
-  "author": "",
-  "title": "gopeed extention demo title",
-  "description": "gopeed extention demo description",
-  "icon": "",
+  "author": "foxxorcat",
+  "title": "百度网盘下载",
+  "description": "支持百度云下载, 包括个人网盘和分享(SVIP可满速下载)",
+  "icon": "icon.png",
   "version": "1.0.0",
-  "homepage": "",
+  "homepage": "https://github.com/foxxorcat/gopeed-extention",
   "repository": {
-    "url": ""
+    "url": "https://github.com/foxxorcat/gopeed-extention",
+    "directory": "gopeed-extention-baidu"
   },
   "scripts": [
     {
       "event": "onResolve",
       "match": {
-        "urls": ["*://github.com/*"],
-        "labels": []
+        "urls": [
+          "*://pan.baidu.com/s/*",
+          "*://pan.baidu.com/share/init/*",
+          "*://pan.baidu.com/disk/main/*",
+          "*://pan.baidu.com/wap/home/*"
+        ]
+      },
+      "entry": "dist/index.js"
+    },
+    {
+      "event": "onStart",
+      "match": {
+        "labels": [
+          "foxxorcat@gopeed-extention-baidu"
+        ]
+      },
+      "entry": "dist/index.js"
+    },
+    {
+      "event": "onError",
+      "match": {
+        "labels": [
+          "foxxorcat@gopeed-extention-baidu"
+        ]
       },
       "entry": "dist/index.js"
     }
   ],
-  "settings": []
+  "settings": [
+    {
+      "name": "clientId",
+      "title": "Client ID",
+      "description": "百度开放平台应用的client_id",
+      "type": "string",
+      "value": "iYCeC9g08h5vuP9UqvPHKKSVrKFXGa1v"
+    },
+    {
+      "name": "clientSecret",
+      "title": "Client Secret",
+      "description": "百度开放平台应用的client_secret",
+      "type": "string",
+      "value": "jXiFMOPVPCWlO2M5CwWQzffpNPaGTRBG"
+    },
+    {
+      "name": "refreshToken",
+      "title": "Refresh Token",
+      "description": "通过百度开放平台获取的刷新令牌",
+      "type": "string"
+    },
+    {
+      "name": "cookie",
+      "title": "Cookie",
+      "description": "使用Cookie登录,需要包含STOKEN和BDUSS(建议使用Refresh Token登录)",
+      "type": "string"
+    },
+    {
+      "name": "folder_depth",
+      "title": "最大解析文件夹深度",
+      "description": "限制解析文件夹深度",
+      "type": "number",
+      "value": "0"
+    },
+    {
+      "name": "max_file_count",
+      "title": "最大解析文件数量",
+      "description": "最多解析多少个文件",
+      "type": "number",
+      "value": "0"
+    }
+  ]
 }

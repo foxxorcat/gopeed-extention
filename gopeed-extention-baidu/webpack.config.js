@@ -10,6 +10,12 @@ export default {
     filename: 'index.js',
     path: path.resolve(__dirname, '../dist'),
   },
+  resolve: {
+    alias: {
+      // 默认browser的self直接使用存在问题
+      '@badgateway/oauth2-client': '@badgateway/oauth2-client/dist/index.js'
+    }
+  },
   devtool: false,
   plugins: [new GopeedPolyfillPlugin()],
   module: {
