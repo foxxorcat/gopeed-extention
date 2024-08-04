@@ -27,6 +27,8 @@ import { merge } from 'lodash-es';
 import { createWalkIter, createListIter, ObjectUtil } from "@netdisk-sdk/utils";
 import { createAuthClient, BaiduClient, createOAuth2Fetch, decryptMd5, parseShareParam, isRootPath, getFileTime, decodeSceKey, ApiError, replaceUrl } from '@netdisk-sdk/baidu-sdk';
 
+const defaultHeader = { 'user-agent': 'netdisk' }
+
 gopeed.events.onResolve(async (ctx) => {
   try {
     const url = new URL(ctx.req.url);
@@ -87,9 +89,8 @@ gopeed.events.onStart(async (ctx) => {
   const { req } = ctx.task.meta
   const labels = req.labels
   const downloadUrl = req.url
-
   try {
-    if (checkLinkExpire(downloadUrl)) {
+    if (await checkLinkExpire(downloadUrl)) {
       // 获取新的链接
       const result = await parseDownloadLink(labels)
       if (result == null) throw '未知错误'
@@ -104,7 +105,7 @@ gopeed.events.onStart(async (ctx) => {
   }
 })
 
-gopeed.events.onError(async(ctx)=>{
+gopeed.events.onError(async (ctx) => {
 
 })
 
@@ -171,9 +172,8 @@ const parseDownloadLink = async (labels) => {
    */
   const parseLink = async (file) => {
     const { info } = await autoClientApi.filemetas({ target: [file.path], dlink: 1 })
-    const ua = 'netdisk'
-    const link = await client.redirectDlink(replaceUrl(info[0].dlink, use_youth), ua)
-    return { link: link.toString(), header: { 'user-agent': ua } }
+    const link = await client.redirectDlink(replaceUrl(info[0].dlink, use_youth), defaultHeader['user-agent'])
+    return { link: link.toString(), header: defaultHeader }
   }
 
   // 处理秒传
@@ -213,7 +213,7 @@ const parseDownloadLink = async (labels) => {
         // transfer 无法自动创建文件夹
         if (flag == 0 && error instanceof ApiError) {
           if (error.info()['errno'] == 2) {
-            gopeed.logger.warn(`临时文件夹: ${savepath}不存在`)
+            gopeed.logger.warn(`临时文件夹: ${savepath} 不存在`)
             await client.fsApi.create({ path: savepath, isdir: 1, rtype: 1 })
             continue
           }
@@ -230,19 +230,22 @@ const parseDownloadLink = async (labels) => {
   return null
 }
 
+import dayjs from 'dayjs';
 /** 
  * 检测下载地址是否过期
  * @param {string|URL} url
  */
-import dayjs from 'dayjs';
-const checkLinkExpire = (url) => {
+const checkLinkExpire = async (url) => {
   try {
     const query = new URL(url).searchParams
     const [time, expires] = [query.get('time'), query.get('expires')]
     if (time && expires) {
       const [, ...exp] = expires.match('([0-9]+)([dh])')
       const expTime = dayjs.unix(time).add(...exp)
-      return dayjs().isAfter(expTime)
+      if (dayjs().isBefore(expTime)) {
+        const { status } = await fetch(url, { method: 'HEAD', headers: defaultHeader })
+        return status < 200 || status >= 400
+      }
     }
   } catch (error) {
     gopeed.logger.warn(`未知的错误 in checkLinkExpire: err is ${error}`)
@@ -323,13 +326,13 @@ const createClient = () => {
     const authClient = createAuthClient(clientId, clientSecret)
     const getToken = async () => {
       const token = JSON.parse(gopeed.storage.get(AUTH_KEY) || '{}')
-      gopeed.logger.debug('getToken', JSON.stringify(token), getIdentity())
+      // gopeed.logger.debug('getToken', JSON.stringify(token), getIdentity())
 
       if (token.identity == getIdentity()) {
         return token
       }
       const newToken = await authClient.refreshToken({ refreshToken })
-      gopeed.logger.debug('getNewToken', JSON.stringify(token), getIdentity())
+      // gopeed.logger.debug('getNewToken', JSON.stringify(token), getIdentity())
       return newToken
     }
     const source = createOAuth2Fetch({
@@ -338,7 +341,7 @@ const createClient = () => {
       getStoredToken: getToken,
       storeToken(token) {
         gopeed.storage.set(AUTH_KEY, JSON.stringify({ ...token, identity: getIdentity() }))
-        gopeed.logger.debug('storeToken', JSON.stringify(token), getIdentity())
+        // gopeed.logger.debug('storeToken', JSON.stringify(token), getIdentity())
       },
       scheduleRefresh: false
     })
