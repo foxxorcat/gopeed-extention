@@ -22,10 +22,11 @@ import { posix as PathUtil } from 'path';
 import all from 'it-all';
 import map from 'it-map';
 import filter from "it-filter";
-import { merge } from 'lodash-es';
+import merge from 'lodash.merge';
 
 import { createWalkIter, createListIter, ObjectUtil } from "@netdisk-sdk/utils";
 import { createAuthClient, BaiduClient, createOAuth2Fetch, decryptMd5, parseShareParam, isRootPath, getFileTime, decodeSceKey, ApiError, replaceUrl } from '@netdisk-sdk/baidu-sdk';
+import { DuParser, parseQueryLink } from './duParser.js';
 
 const defaultHeader = { 'user-agent': 'netdisk' }
 
@@ -79,6 +80,38 @@ gopeed.events.onResolve(async (ctx) => {
         files
       }
       gopeed.logger.debug(`${JSON.stringify(shareInfo)} 获取到文件数量 ${files.length}`)
+      return
+    }
+
+    // 处理bdlink
+    const filesInfo = DuParser.parse(parseQueryLink(url.hash))
+    if (filesInfo?.length) {
+      const files = filesInfo.map(file => {
+        const { size, md5, path } = file
+        const name = PathUtil.basename(path)
+        const rootpath = PathUtil.join('/', PathUtil.dirname(path))
+        const dir = PathUtil.relative('/', rootpath)
+        return {
+          name,
+          path: dir,
+          size: size,
+          req: {
+            extra: { header: {} },
+            url: `https://pan.baidu.com/${md5}#${size}`,
+            labels: {
+              [gopeed.info.identity]: '0',
+              path, size, md5
+            }
+          }
+        }
+      })
+      ctx.res = {
+        name: '秒链解析',
+        range: true,
+        files
+      }
+      gopeed.logger.debug(`获取到文件数量 ${files.length}`)
+      return
     }
   } catch (error) {
     gopeed.logger.error(`文件解析失败: error: ${error},stack: ${error?.stack}}`)
@@ -183,7 +216,8 @@ const parseDownloadLink = async (labels) => {
     if (use_youth) {
       const { uploadid } = await autoClientApi.precreate(updateParam)
       file = await autoClientApi.create({ ...updateParam, uploadid })
-    } else if (refreshToken && type == '0') {
+    } else if (type == '0') {
+      if (!refreshToken) throw '需要设置refreshToken'
       file = await client.fsOpenApi.create(updateParam)
     }
     if (file != null) {

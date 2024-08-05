@@ -19,7 +19,8 @@
           "*://pan.baidu.com/s/*",
           "*://pan.baidu.com/share/init/*",
           "*://pan.baidu.com/disk/main/*",
-          "*://pan.baidu.com/wap/home/*"
+          "*://pan.baidu.com/wap/home/*",
+          "*://pan.baidu.com/*"
         ]
       },
       "entry": "dist/index.js"

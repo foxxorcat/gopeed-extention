@@ -1,9 +1,11 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import GopeedPolyfillPlugin from 'gopeed-polyfill-webpack-plugin';
+// import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
 const __dirname = fileURLToPath(import.meta.url);
 
+/** @type {import('webpack').Configuration} */
 export default {
   entry: './src/index.js',
   output: {
@@ -27,5 +29,5 @@ export default {
         },
       },
     ],
-  },
+  }
 };
