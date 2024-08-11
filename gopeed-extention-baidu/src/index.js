@@ -204,7 +204,7 @@ const parseDownloadLink = async (labels) => {
    * @param {Pick<IFile,'path'|'fs_id'>} file
    */
   const parseLink = async (file) => {
-    const { info } = await autoClientApi.filemetas({ target: [file.path], dlink: 1 })
+    const { info } = await autoClientApi.filemetas({ target: [file.path], dlink: 1 }, defaultHeader['user-agent'])
     const link = await client.redirectDlink(replaceUrl(info[0].dlink, use_youth), defaultHeader['user-agent'])
     return { link: link.toString(), header: defaultHeader }
   }
@@ -233,20 +233,28 @@ const parseDownloadLink = async (labels) => {
 
   // 解析分享文件
   if (type == '1') {
+    // 部分账号Cookie登录时，文件操作需要 bdstoken
+    if (typeof client.source == 'string') {
+      const { bdstoken } = await client.fsApi.gettemplatevariable(['bdstoken']); client.agentApi.query({ bdstoken })
+    }
+
     for (let flag = 0; flag < 2; flag++) {
       try {
         const { extra: { list } } = await client.fsShareApi.transfer(shareTransfer, savepath, fid)
         const file = { path: list[0].to, fs_id: list[0].to_fs_id }
         try { return await parseLink(file) } finally {
-          // 删除文件
+          // 删除文件(直接删除回收站文件)
           client.fsApi.recycleDelete({ async: 0 }, file.fs_id).catch(err => {
-            gopeed.logger.warn(`转存文件：${file.path} 删除失败，错误：${err}`)
+            // 删除回收站文件需要验证，仅删除文件
+            client.fsApi.filemanager('delete', { filelist: [file.path] }).catch(err2 => {
+              gopeed.logger.warn(`转存文件：${file.path} 删除失败，错误：${err} and ${err2}`)
+            })
           })
         }
       } catch (error) {
         // transfer 无法自动创建文件夹
         if (flag == 0 && error instanceof ApiError) {
-          if (error.info()['errno'] == 2) {
+          if (error.info()?.['errno'] == 2) {
             gopeed.logger.warn(`临时文件夹: ${savepath} 不存在`)
             await client.fsApi.create({ path: savepath, isdir: 1, rtype: 1 })
             continue

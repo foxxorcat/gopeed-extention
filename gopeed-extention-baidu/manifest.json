@@ -5,7 +5,7 @@
   "title": "百度网盘下载",
   "description": "支持百度云下载, 包括个人网盘和分享(SVIP可满速下载)",
   "icon": "icon.png",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/foxxorcat/gopeed-extention",
   "repository": {
     "url": "https://github.com/foxxorcat/gopeed-extention",
