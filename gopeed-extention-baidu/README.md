@@ -13,7 +13,8 @@
 ## 使用说明
 
 ### 登录说明
-扩展有两种登录方式，任意一种即可
+扩展有两种登录方式
+注: 如果需要下载分享链接请使用Cookie方式，使用Refresh Token会进行一次转存。
 
 #### 1. 设置 Cookie 登录
 扩展需要配置网盘`Cookie`，其中必须包含`STOKEN`和`BDUSS`值，请参考以下步骤进行配置：
@@ -26,9 +27,13 @@
 
 #### 2. 设置 Refresh Token 登录
 
-目前扩展默认设置了`alist`的百度网盘参数，只需要通过此[链接](https://openapi.baidu.com/oauth/2.0/authorize?response_type=code&client_id=iYCeC9g08h5vuP9UqvPHKKSVrKFXGa1v&redirect_uri=https://alist.nn.ci/tool/baidu/callback&scope=basic,netdisk&qrcode=1)来获取你自己的`refresh_token`即可。
+此方式通过百度网盘开放平台接口实现，需要设置开放平台对应的参数，请参考以下步骤进行配置：
 
-接着把复制的`refresh_token`值填入`Gopeed`扩展的设置页面，点击保存即可。
+#### 1. 设置 refresh_token
+
+首先要获取对应的`refresh_token`，目前扩展默认设置了`oplist`的百度网盘参数，只需要通过此[链接](https://api.oplist.org)来获取你自己的`refresh_token`即可，注意选择`百度网盘 (OAuth2) 手动登录`然后点击`获取Token`按钮，之后根据指引输入百度网盘生成的授权码成即可获取。
+
+把复制的`refresh_token`值填入`Gopeed`扩展的设置页面，点击保存即可。
 
 ### 配置说明
 插件默认只解析`顶层文件`，这是为了防止文件过多导致解析失败，如果需要解析更多层级的文件夹，请自行设置`最大文件深度`和`最大文件数量`限制。

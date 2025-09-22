@@ -5,7 +5,7 @@
   "title": "百度网盘下载",
   "description": "支持百度云下载, 包括个人网盘和分享(SVIP可满速下载)",
   "icon": "icon.png",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://github.com/foxxorcat/gopeed-extention",
   "repository": {
     "url": "https://github.com/foxxorcat/gopeed-extention",
@@ -50,14 +50,14 @@
       "title": "Client ID",
       "description": "百度开放平台应用的client_id",
       "type": "string",
-      "value": "iYCeC9g08h5vuP9UqvPHKKSVrKFXGa1v"
+      "value": "NqOMXF6XGhGRIGemsQ9nG0Na"
     },
     {
       "name": "clientSecret",
       "title": "Client Secret",
       "description": "百度开放平台应用的client_secret",
       "type": "string",
-      "value": "jXiFMOPVPCWlO2M5CwWQzffpNPaGTRBG"
+      "value": "SVT6xpMdLcx6v4aCR4wT8BBOTbzFO8LM"
     },
     {
       "name": "refreshToken",
@@ -83,7 +83,7 @@
       "title": "最大解析文件数量",
       "description": "最多解析多少个文件",
       "type": "number",
-      "value": "0"
+      "value": "500"
     }
   ]
 }

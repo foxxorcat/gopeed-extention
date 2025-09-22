@@ -31,6 +31,7 @@ import { DuParser, parseQueryLink } from './duParser.js';
 const defaultHeader = { 'user-agent': 'netdisk' }
 
 gopeed.events.onResolve(async (ctx) => {
+  gopeed.logger.debug(`Starting resolution for URL: ${ctx.req.url}`);
   try {
     const url = new URL(ctx.req.url);
 
@@ -38,6 +39,7 @@ gopeed.events.onResolve(async (ctx) => {
     if (url.pathname.startsWith("/disk/main") || url.pathname.startsWith("/wap/home")) {
       const [, , rawpath = "/"] = /(path|dir)=([^&]*)/.exec(url.hash) || []
       const path = decodeURIComponent(rawpath)
+      gopeed.logger.debug(`Resolving personal cloud link for path: ${path}`);
       const name = PathUtil.basename(path)
       const title = name || '全部文件'
 
@@ -48,13 +50,14 @@ gopeed.events.onResolve(async (ctx) => {
         range: true,
         files
       }
-      gopeed.logger.debug(`获取到文件数量 ${files.length}`)
+      gopeed.logger.debug(`Personal cloud resolution successful. Found ${files.length} files.`);
       return
     }
 
     // 处理分享链接
     const shareInfo = parseShareParam(url)
     if (shareInfo != null) {
+      gopeed.logger.debug(`Resolving share link: ${JSON.stringify('surl' in shareInfo ? { surl: shareInfo.shorturl } : { shareid: shareInfo.shareid })}`);
       // 解析链接中的地址
       const path = (() => {
         if (url.hash.startsWith('#/home/')) {
@@ -69,6 +72,7 @@ gopeed.events.onResolve(async (ctx) => {
       })()
       const { rootPath, name, shareTransfer } = await getShareRootPath(shareInfo)
       const fullPath = isRootPath(path) ? '/' : PathUtil.join('/', rootPath, path)
+      gopeed.logger.debug(`Target path in share: ${fullPath}`);
       const title = name || '分享文件'
 
       const filesIter = resolveWithShare(ctx, shareInfo, fullPath, getResolveOption())
@@ -79,13 +83,14 @@ gopeed.events.onResolve(async (ctx) => {
         range: true,
         files
       }
-      gopeed.logger.debug(`${JSON.stringify(shareInfo)} 获取到文件数量 ${files.length}`)
+      gopeed.logger.debug(`Share link resolution successful. Found ${files.length} files.`);
       return
     }
 
     // 处理bdlink
     const filesInfo = DuParser.parse(parseQueryLink(url.hash))
     if (filesInfo?.length) {
+      gopeed.logger.debug(`Resolving bdlink (second transfer link).`);
       const files = filesInfo.map(file => {
         const { size, md5, path } = file
         const name = PathUtil.basename(path)
@@ -110,11 +115,11 @@ gopeed.events.onResolve(async (ctx) => {
         range: true,
         files
       }
-      gopeed.logger.debug(`获取到文件数量 ${files.length}`)
+      gopeed.logger.debug(`bdlink resolution successful. Found ${files.length} files.`);
       return
     }
   } catch (error) {
-    gopeed.logger.error(`文件解析失败: error: ${error},stack: ${error?.stack}}`)
+    gopeed.logger.error(`File resolution failed: error: ${error}, stack: ${error?.stack}}`)
   }
 });
 
@@ -122,24 +127,28 @@ gopeed.events.onStart(async (ctx) => {
   const { req } = ctx.task.meta
   const labels = req.labels
   const downloadUrl = req.url
+  gopeed.logger.debug(`Starting download task for file: ${labels.path}, checking link expiration.`);
   try {
     if (await checkLinkExpire(downloadUrl)) {
-      // 获取新的链接
+      gopeed.logger.debug(`Download link is expired or invalid. Fetching new link...`);
       const result = await parseDownloadLink(labels)
-      if (result == null) throw '未知错误'
+      if (result == null) throw 'Failed to get new download link, unknown error.';
 
       req.url = result.link
+      gopeed.logger.debug(`New download link fetched successfully.`);
       req.extra = merge(req.extra, {
         header: result.header
       })
+    } else {
+      gopeed.logger.debug(`Download link is still valid. Proceeding with download.`);
     }
   } catch (error) {
-    throw `下载链接解析失败, error: ${error},stack: ${error?.stack}, labels: ${JSON.stringify(labels)}`
+    throw `Download link parsing failed, error: ${error},stack: ${error?.stack}, labels: ${JSON.stringify(labels)}`
   }
 })
 
 gopeed.events.onError(async (ctx) => {
-
+  gopeed.logger.error(`An error occurred in task ${ctx.task.id}: ${ctx.error}`);
 })
 
 /**
@@ -196,14 +205,15 @@ const parseDownloadLink = async (labels) => {
   const savepath = PathUtil.join('/gopeed_temp')
   const filepath = PathUtil.join(savepath, filename)
 
-  const client = createClient()
+  const client = await createClient()
   const autoClientApi = client[`fs${use_youth ? 'Youth' : ''}Api`]
+  gopeed.logger.debug(`Parsing download link for type: ${type}, file: ${path}`);
 
-  /** 
-   * 获取文件下载地址
+  /**    * 获取文件下载地址
    * @param {Pick<IFile,'path'|'fs_id'>} file
    */
   const parseLink = async (file) => {
+    gopeed.logger.debug(`Fetching final download URL for file: ${file.path}`);
     const { info } = await autoClientApi.filemetas({ target: [file.path], dlink: 1 }, defaultHeader['user-agent'])
     const link = await client.redirectDlink(replaceUrl(info[0].dlink, use_youth), defaultHeader['user-agent'])
     return { link: link.toString(), header: defaultHeader }
@@ -211,20 +221,25 @@ const parseDownloadLink = async (labels) => {
 
   // 处理秒传
   if (/[0-9a-z]{32}/i.test(md5) && filename != null && size != null) {
+    gopeed.logger.debug(`Attempting rapid upload (second transfer) for file: ${filename}`);
     const updateParam = { path: filepath, size, isdir: 0, block_list: [md5], rtype: 3, local_ctime: ctime, local_mtime: mtime }
     let file = null
     if (use_youth) {
+      gopeed.logger.debug(`Using youth mode for rapid upload.`);
       const { uploadid } = await autoClientApi.precreate(updateParam)
       file = await autoClientApi.create({ ...updateParam, uploadid })
     } else if (type == '0') {
-      if (!refreshToken) throw '需要设置refreshToken'
+      throw new MessageError("接口已经修复，秒传功能失效")
+      gopeed.logger.debug(`Using open API for rapid upload.`);
+      if (!refreshToken) throw 'A refreshToken is required for this operation.';
       file = await client.fsOpenApi.create(updateParam)
     }
     if (file != null) {
+      gopeed.logger.debug(`Rapid upload successful, temporary file created at: ${file.path}`);
       try { return await parseLink(file) } finally {
-        // 删除文件
+        gopeed.logger.debug(`Cleaning up temporary file: ${file.path}`);
         autoClientApi.recycleDelete({ async: 0 }, file.fs_id).catch(err => {
-          gopeed.logger.warn(`秒传文件：${file.path} 删除失败，错误：${err}`)
+          gopeed.logger.warn(`Failed to delete temporary file from recycle bin: ${file.path}, error: ${err}. Attempting direct deletion.`);
           autoClientApi.filemanager('delete', { filelist: [file.path] })
         })
       }
@@ -233,29 +248,33 @@ const parseDownloadLink = async (labels) => {
 
   // 解析分享文件
   if (type == '1') {
-    // 部分账号Cookie登录时，文件操作需要 bdstoken
+    gopeed.logger.debug(`Parsing download link for shared file.`);
     if (typeof client.source == 'string') {
-      const { bdstoken } = await client.fsApi.gettemplatevariable(['bdstoken']); client.agentApi.query({ bdstoken })
+      gopeed.logger.debug(`Using cookie-based client to get share download link directly.`);
+      let { list } = await client.fsShareApi.sharedownload({ fsid_list: [fid], uk: from, shareid, sekey });
+      const link = await client.redirectDlink(replaceUrl(list[0].dlink, use_youth), defaultHeader['user-agent'])
+      return { link: link.toString(), header: defaultHeader }
     }
-
+    gopeed.logger.debug(`Using token-based client, will transfer file to personal space first.`);
     for (let flag = 0; flag < 2; flag++) {
       try {
+        gopeed.logger.debug(`Attempting to transfer shared file (fid: ${fid}) to temporary path: ${savepath}`);
         const { extra: { list } } = await client.fsShareApi.transfer(shareTransfer, savepath, fid)
         const file = { path: list[0].to, fs_id: list[0].to_fs_id }
+        gopeed.logger.debug(`File transferred successfully to: ${file.path}. Now parsing its download link.`);
         try { return await parseLink(file) } finally {
-          // 删除文件(直接删除回收站文件)
+          gopeed.logger.debug(`Cleaning up transferred temporary file: ${file.path}`);
           client.fsApi.recycleDelete({ async: 0 }, file.fs_id).catch(err => {
-            // 删除回收站文件需要验证，仅删除文件
+            gopeed.logger.warn(`Failed to delete temporary file from recycle bin: ${file.path}, error: ${err}. Attempting direct deletion.`);
             client.fsApi.filemanager('delete', { filelist: [file.path] }).catch(err2 => {
-              gopeed.logger.warn(`转存文件：${file.path} 删除失败，错误：${err} and ${err2}`)
+              gopeed.logger.warn(`Failed to delete transferred file: ${file.path}, errors: ${err} and ${err2}`)
             })
           })
         }
       } catch (error) {
-        // transfer 无法自动创建文件夹
         if (flag == 0 && error instanceof ApiError) {
           if (error.info()?.['errno'] == 2) {
-            gopeed.logger.warn(`临时文件夹: ${savepath} 不存在`)
+            gopeed.logger.warn(`Temporary folder '${savepath}' does not exist. Creating it now.`);
             await client.fsApi.create({ path: savepath, isdir: 1, rtype: 1 })
             continue
           }
@@ -267,14 +286,14 @@ const parseDownloadLink = async (labels) => {
 
   // 解析个人文件
   if (type == '2') {
+    gopeed.logger.debug(`Parsing download link for personal file.`);
     return await parseLink({ path, fs_id: fid })
   }
   return null
 }
 
 import dayjs from 'dayjs';
-/** 
- * 检测下载地址是否过期
+/**  * 检测下载地址是否过期
  * @param {string|URL} url
  */
 const checkLinkExpire = async (url) => {
@@ -290,7 +309,7 @@ const checkLinkExpire = async (url) => {
       }
     }
   } catch (error) {
-    gopeed.logger.warn(`未知的错误 in checkLinkExpire: err is ${error}`)
+    gopeed.logger.warn(`An unknown error occurred in checkLinkExpire: ${error}`)
   }
   return true
 }
@@ -300,12 +319,14 @@ const checkLinkExpire = async (url) => {
  * @param {IShareParam} shareParam
  */
 const getShareRootPath = async (shareParam) => {
-  const client = createClient()
+  gopeed.logger.debug(`Fetching share root path info...`);
+  const client = await createClient()
   const { list, title, seckey, uk, shareid } = await client.fsShareApi.wxlist({ ...shareParam, dir: '/', num: 0 })
   const name = PathUtil.basename(title)
   const rootPath = PathUtil.dirname(title)
   /** @type {ITransferShareParam} */
   const shareTransfer = { shareid, from: uk, sekey: decodeSceKey(seckey) }
+  gopeed.logger.debug(`Share root path info obtained: name=${name}, rootPath=${rootPath}`);
   return { rootPath, name, shareTransfer }
 }
 
@@ -319,11 +340,12 @@ const getShareRootPath = async (shareParam) => {
  * @param {number} options.maxcount 最大数量
  */
 const resolveWithShare = async function* (ctx, shareParam, dir = '/', options = { deep: 0, maxcount: Infinity }) {
-  const client = createClient()
+  const client = await createClient()
   const num = 200
   const listWalk = createWalkIter(
     createListIter(ObjectUtil.bindObject(client.fsShareApi, 'wxlist'), {
-      hasMore: (result) => result.has_more
+      hasMore: (result) => result.has_more,
+      transferFile: (result) => result.list,
     }),
     {
       getNextParam(file, param) {
@@ -344,7 +366,7 @@ const resolveWithShare = async function* (ctx, shareParam, dir = '/', options = 
  * @param {number} options.maxcount 最大数量
  */
 const resolveWithPerson = async function* (ctx, dir = '/', options = { deep: 0, maxcount: Infinity }) {
-  const client = createClient()
+  const client = await createClient()
 
   const num = 200
   const listWalk = createWalkIter(
@@ -362,19 +384,20 @@ const resolveWithPerson = async function* (ctx, dir = '/', options = { deep: 0, 
 }
 
 const AUTH_KEY = "auth_token"
-const createClient = () => {
+const UID_AND_SK = "uid_and_sk"
+const createClient = async () => {
   const { clientId, clientSecret, refreshToken, cookie, use_youth, devuid } = gopeed.settings
   if (refreshToken) {
+    gopeed.logger.debug('Creating BaiduClient with refreshToken.');
     const authClient = createAuthClient(clientId, clientSecret)
     const getToken = async () => {
       const token = JSON.parse(gopeed.storage.get(AUTH_KEY) || '{}')
-      // gopeed.logger.debug('getToken', JSON.stringify(token), getIdentity())
-
       if (token.identity == getIdentity()) {
+        gopeed.logger.debug('Using cached auth token.');
         return token
       }
+      gopeed.logger.debug('Cached auth token is invalid or missing, refreshing...');
       const newToken = await authClient.refreshToken({ refreshToken })
-      // gopeed.logger.debug('getNewToken', JSON.stringify(token), getIdentity())
       return newToken
     }
     const source = createOAuth2Fetch({
@@ -382,8 +405,8 @@ const createClient = () => {
       getNewToken: getToken,
       getStoredToken: getToken,
       storeToken(token) {
+        gopeed.logger.debug('Storing new auth token.');
         gopeed.storage.set(AUTH_KEY, JSON.stringify({ ...token, identity: getIdentity() }))
-        // gopeed.logger.debug('storeToken', JSON.stringify(token), getIdentity())
       },
       scheduleRefresh: false
     })
@@ -394,10 +417,25 @@ const createClient = () => {
   }
 
   if (/STOKEN=/.test(cookie) && /BDUSS=/.test(cookie)) {
-    return new BaiduClient(cookie)
+    gopeed.logger.debug('Creating BaiduClient with cookie.');
+    const client = new BaiduClient(cookie)
+    const { uid, androidChannel, identity, bduss } = JSON.parse(gopeed.storage.get(UID_AND_SK) || '{}')
+    if (bduss && uid && androidChannel && identity == getIdentity()) {
+      gopeed.logger.debug(`Loading cached user details (uid:${uid}, sk:${JSON.stringify(androidChannel)}) from storage.`,);
+      client.uid = uid;
+      client.androidChannel = androidChannel
+      client.bduss = bduss;
+    } else {
+      gopeed.logger.debug('Initializing new user details (uid, sk)...');
+      await client.init();
+      gopeed.logger.debug('Storing new user details to storage.');
+      gopeed.storage.set(UID_AND_SK, JSON.stringify({ bduss: client.bduss, uid: client.uid, androidChannel: client.androidChannel, identity: getIdentity() }))
+    }
+
+    return client
   }
 
-  throw '登录信息无效, 请配置 Refresh Token 或 Cookie'
+  throw 'Login information is invalid. Please configure Refresh Token or Cookie.'
 }
 
 /** 获取当前登录特征 */
