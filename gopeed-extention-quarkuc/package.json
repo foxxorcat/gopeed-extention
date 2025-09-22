@@ -22,15 +22,18 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "gopeed": "^1.4.0",
-    "gopeed-polyfill-webpack-plugin": "^1.0.2",
+    "gopeed-polyfill-webpack-plugin": "^1.0.6",
     "prettier": "^3.0.3",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1"
   },
   "dependencies": {
     "@netdisk-sdk/quarkuc-sdk": "workspace:^",
-    "fastestsmallesttextencoderdecoder": "^1.0.22",
-    "js-xxhash": "^4.0.0",
+    "@netdisk-sdk/utils": "workspace:^",
+    "core-js": "^3.37.1",
+    "it-all": "^3.0.6",
+    "it-filter": "^3.1.1",
+    "it-map": "^3.1.1",
     "lodash.merge": "^4.6.2",
     "superagent": "^9.0.2"
   }

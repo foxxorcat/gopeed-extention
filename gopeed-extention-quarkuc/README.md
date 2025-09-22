@@ -25,6 +25,7 @@
 打开`Gopeed`任务页面，点击`新建任务`，创建即可解析下载。
 
 #### 3. 链接试例
+- https://pan.quark.cn/list#/list/all
 - https://pan.quark.cn/s/377304eaf34b
 - https://pan.quark.cn/s/502a917150b0#/list/share/5409f06ee8144055a84ce06fee6cab02-%F0%9F%94%A52023.3.23%E6%9C%80%E6%96%B0%E6%95%B4%E7%90%86%E7%A0%B4%E8%A7%A3%E8%BD%AF%E4%BB%B6%E5%90%88%E9%9B%86%E3%80%90222%E6%AC%BE11GB%E3%80%91
 - https://pan.quark.cn/s/xxxxxxxxxxxx 密码：xxxx

@@ -5,7 +5,7 @@
   "title": "夸克和UC网盘分享下载",
   "description": "支持夸克和UC网盘分享下载(自动删除转存)",
   "icon": "icon.png",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/foxxorcat/gopeed-extention",
   "repository": {
     "url": "https://github.com/foxxorcat/gopeed-extention",
@@ -16,6 +16,8 @@
       "event": "onResolve",
       "match": {
         "urls": [
+          "*://pan.quark.cn/list",
+          "*://drive.uc.cn/list",
           "*://pan.quark.cn/s/*",
           "*://drive.uc.cn/s/*"
         ]
@@ -53,6 +55,20 @@
       "title": "UCCookie",
       "description": "UC网盘网站Cookie,必须包含__puus",
       "type": "string"
+    },
+    {
+      "name": "folder_depth",
+      "title": "最大解析文件夹深度",
+      "description": "限制解析文件夹深度",
+      "type": "number",
+      "value": "0"
+    },
+    {
+      "name": "max_file_count",
+      "title": "最大解析文件数量",
+      "description": "最多解析多少个文件",
+      "type": "number",
+      "value": "500"
     }
   ]
 }
